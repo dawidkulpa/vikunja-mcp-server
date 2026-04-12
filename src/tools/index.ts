@@ -21,6 +21,7 @@ import { registerTaskCrudTool } from './task-crud';
 import { registerTaskBulkTool } from './task-bulk';
 import { registerTaskAssigneesTool } from './task-assignees';
 import { registerTaskCommentsTool } from './task-comments';
+import { registerTaskBucketsTool } from './task-buckets';
 import { registerTaskRemindersTool } from './task-reminders';
 import { registerTaskLabelsTool } from './task-labels';
 import { registerTaskRelationsTool } from './task-relations';
@@ -34,27 +35,15 @@ import { registerWebhooksTool } from './webhooks';
 import { registerBatchImportTool } from './batch-import';
 import { registerExportTool } from './export';
 
-// Re-export for testing
-export {
-  registerAuthTool,
-  registerTasksTool,
-  registerTaskCrudTool,
-  registerTaskBulkTool,
-  registerTaskAssigneesTool,
-  registerTaskCommentsTool,
-  registerTaskRemindersTool,
-  registerTaskLabelsTool,
-  registerTaskRelationsTool,
-  registerProjectsTool,
-  registerLabelsTool,
-  registerTeamsTool,
-  registerUsersTool,
-  registerFiltersTool,
-  registerTemplatesTool,
-  registerWebhooksTool,
-  registerBatchImportTool,
-  registerExportTool,
-};
+export { registerTasksTool } from './tasks';
+export { registerTaskCrudTool } from './task-crud';
+export { registerTaskBulkTool } from './task-bulk';
+export { registerTaskAssigneesTool } from './task-assignees';
+export { registerTaskCommentsTool } from './task-comments';
+export { registerTaskBucketsTool } from './task-buckets';
+export { registerTaskRemindersTool } from './task-reminders';
+export { registerTaskLabelsTool } from './task-labels';
+export { registerTaskRelationsTool } from './task-relations';
 
 export function registerTools(
   server: McpServer, 
@@ -73,6 +62,7 @@ export function registerTools(
   registerTaskBulkTool(server, authManager, clientFactory);
   registerTaskAssigneesTool(server, authManager, clientFactory);
   registerTaskCommentsTool(server, authManager, clientFactory);
+  registerTaskBucketsTool(server, authManager, clientFactory);
   registerTaskRemindersTool(server, authManager, clientFactory);
   registerTaskLabelsTool(server, authManager, clientFactory);
   registerTaskRelationsTool(server, authManager, clientFactory);
@@ -103,4 +93,3 @@ export function registerTools(
     }
   }
 }
-
