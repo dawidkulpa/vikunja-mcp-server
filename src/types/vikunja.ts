@@ -391,3 +391,18 @@ export interface ApiToken {
   expires_at?: string;
   created?: string;
 }
+
+export interface Activity {
+  id?: number;
+  task_id: number;
+  user_id?: number;
+  type?: number;
+  data?: Record<string, unknown>;
+  created?: string;
+  updated?: string;
+}
+
+export interface TaskBucketAssignment {
+  task_id: number;
+  position?: number;
+}
