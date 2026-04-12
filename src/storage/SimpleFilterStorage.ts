@@ -253,6 +253,8 @@ export class FilterStorageManager {
       if (!storage) {
         storage = new SimpleFilterStorage(sessionId, userId, apiUrl);
         this.storageInstances.set(sessionId, storage);
+      } else {
+        (storage as unknown as { updateAccessTime(): void }).updateAccessTime();
       }
       return storage;
     } finally {
