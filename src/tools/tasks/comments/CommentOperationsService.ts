@@ -30,6 +30,43 @@ export const CommentOperationsService = {
   },
 
   /**
+   * List comments for a task
+   */
+  async listComments(taskId: number): Promise<TaskComment[]> {
+    const client = await getClientFromContext();
+    return await client.tasks.getTaskComments(taskId);
+  },
+
+  /**
+   * Add a new comment to a task
+   */
+  async addComment(taskId: number, comment: string): Promise<TaskComment> {
+    const client = await getClientFromContext();
+    return await client.tasks.createTaskComment(taskId, {
+      task_id: taskId,
+      comment,
+    });
+  },
+
+  /**
+   * Update an existing task comment
+   */
+  async updateComment(taskId: number, commentId: number, comment: string): Promise<TaskComment> {
+    const client = await getClientFromContext();
+    return await client.tasks.updateTaskComment(taskId, commentId, {
+      comment,
+    } as unknown as TaskComment);
+  },
+
+  /**
+   * Delete a task comment
+   */
+  async deleteComment(taskId: number, commentId: number): Promise<void> {
+    const client = await getClientFromContext();
+    await client.tasks.deleteTaskComment(taskId, commentId);
+  },
+
+  /**
    * Get comment count from comments array
    */
   getCommentCount(comments: TaskComment[]): number {

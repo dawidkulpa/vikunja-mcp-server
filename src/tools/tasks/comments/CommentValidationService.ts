@@ -9,6 +9,7 @@ import { validateId } from '../validation';
 export interface CommentOperationInput {
   id?: number;
   comment?: string;
+  commentId?: number;
 }
 
 /**
@@ -50,6 +51,74 @@ export const commentValidationService = {
 
     return {
       taskId: args.id,
+    };
+  },
+
+  /**
+   * Validate input specifically for adding comments
+   */
+  validateAddInput(args: CommentOperationInput): { taskId: number; commentText: string } {
+    const { taskId, commentText } = this.validateCommentInput(args);
+
+    if (commentText === undefined || commentText.trim() === '') {
+      throw new MCPError(ErrorCode.VALIDATION_ERROR, 'Comment text is required for add operation');
+    }
+
+    return {
+      taskId,
+      commentText,
+    };
+  },
+
+  /**
+   * Validate input specifically for updating comments
+   */
+  validateUpdateInput(args: CommentOperationInput): {
+    taskId: number;
+    commentId: number;
+    commentText: string;
+  } {
+    const { taskId, commentText } = this.validateCommentInput(args);
+
+    if (args.commentId === undefined) {
+      throw new MCPError(ErrorCode.VALIDATION_ERROR, 'Comment id is required for update operation');
+    }
+    validateId(args.commentId, 'commentId');
+
+    if (commentText === undefined || commentText.trim() === '') {
+      throw new MCPError(
+        ErrorCode.VALIDATION_ERROR,
+        'Comment text is required for update operation',
+      );
+    }
+
+    return {
+      taskId,
+      commentId: args.commentId,
+      commentText,
+    };
+  },
+
+  /**
+   * Validate input specifically for deleting comments
+   */
+  validateDeleteInput(args: Pick<CommentOperationInput, 'id' | 'commentId'>): {
+    taskId: number;
+    commentId: number;
+  } {
+    if (args.id === undefined) {
+      throw new MCPError(ErrorCode.VALIDATION_ERROR, 'Task id is required for delete operation');
+    }
+    validateId(args.id, 'id');
+
+    if (args.commentId === undefined) {
+      throw new MCPError(ErrorCode.VALIDATION_ERROR, 'Comment id is required for delete operation');
+    }
+    validateId(args.commentId, 'commentId');
+
+    return {
+      taskId: args.id,
+      commentId: args.commentId,
     };
   },
 
