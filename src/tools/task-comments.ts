@@ -12,7 +12,12 @@ import { MCPError, ErrorCode } from '../types';
 import { getClientFromContext, setGlobalClientFactory } from '../client';
 import { logger } from '../utils/logger';
 import { createAuthRequiredError } from '../utils/error-handler';
-import { handleComment } from '../tools/tasks/comments/index';
+import {
+  handleAddComment,
+  handleDeleteComment,
+  handleListComments,
+  handleUpdateComment,
+} from '../tools/tasks/comments/index';
 
 /**
  * Register task comments tool
@@ -24,12 +29,12 @@ export function registerTaskCommentsTool(
 ): void {
   server.tool(
     'vikunja_task_comments',
-    'Manage task comments: add comments to tasks',
+    'Manage task comments: list, add, update, and delete',
     {
-      operation: z.enum(['comment']),
+      operation: z.enum(['list', 'add', 'update', 'delete']),
       // Task and comment identification
       id: z.number(),
-      comment: z.string(),
+      comment: z.string().optional(),
       commentId: z.number().optional(),
     },
     async (args) => {
@@ -49,9 +54,32 @@ export function registerTaskCommentsTool(
         // Test client connection
         await getClientFromContext();
 
+        const baseArgs = { id: args.id };
+        const argsWithComment = {
+          ...baseArgs,
+          ...(args.comment !== undefined ? { comment: args.comment } : {}),
+        };
+        const argsWithCommentId = {
+          ...baseArgs,
+          ...(args.commentId !== undefined ? { commentId: args.commentId } : {}),
+        };
+        const argsWithCommentIdAndComment = {
+          ...argsWithCommentId,
+          ...(args.comment !== undefined ? { comment: args.comment } : {}),
+        };
+
         switch (args.operation) {
-          case 'comment':
-            return handleComment(args);
+          case 'list':
+            return await handleListComments(baseArgs);
+
+          case 'add':
+            return await handleAddComment(argsWithComment);
+
+          case 'update':
+            return await handleUpdateComment(argsWithCommentIdAndComment);
+
+          case 'delete':
+            return await handleDeleteComment(argsWithCommentId);
 
           default:
             throw new MCPError(
