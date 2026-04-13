@@ -1,5 +1,9 @@
 # Vikunja MCP Server
 
+[![npm version](https://img.shields.io/npm/v/vikunja-mcp-server)](https://www.npmjs.com/package/vikunja-mcp-server)
+[![CI](https://github.com/dawidkulpa/vikunja-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/dawidkulpa/vikunja-mcp-server/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A Model Context Protocol (MCP) server that enables AI assistants to interact with Vikunja task management instances.
 
 ## Features
@@ -23,7 +27,7 @@ A Model Context Protocol (MCP) server that enables AI assistants to interact wit
 - **Memory protection** with pagination limits and usage monitoring
 - **Simplified architecture** with 90% code reduction for maintainability
 
-## 🚀 Major Architectural Improvements (v0.2.0)
+## 🚀 Major Architectural Improvements
 
 This release represents a **massive architectural simplification** that eliminates technical debt while enhancing security and reliability:
 
@@ -949,6 +953,46 @@ The Vikunja filter syntax supports SQL-like queries with the following:
 - **Metadata**: Response includes filtering method used (`serverSideFiltering` or `clientSideFiltering`)
 - **Performance**: Server-side filtering significantly reduces network traffic and processing time
 
+### Kanban Board & Task Detail Examples
+
+```typescript
+// List all views for a project
+vikunja_buckets({ operation: 'list-views', projectId: 1 })
+
+// List buckets in a specific view
+vikunja_buckets({ operation: 'list-buckets', projectId: 1, viewId: 1 })
+
+// List tasks within all buckets of a view (full kanban board)
+vikunja_buckets({ operation: 'list-bucket-tasks', projectId: 1, viewId: 1 })
+
+// List tasks in a specific bucket only
+vikunja_buckets({ operation: 'list-bucket-tasks', projectId: 1, viewId: 1, bucketId: 3 })
+
+// Move a task to a different kanban column
+vikunja_task_move({ operation: 'move', projectId: 1, viewId: 1, bucketId: 3, taskId: 42 })
+
+// Move a task and set its position within the column
+vikunja_task_move({ operation: 'move', projectId: 1, viewId: 1, bucketId: 3, taskId: 42, position: 0 })
+
+// Get activity history for a task
+vikunja_task_activity({ operation: 'list', taskId: 42 })
+
+// Get second page of activity history
+vikunja_task_activity({ operation: 'list', taskId: 42, page: 2 })
+
+// List all comments on a task
+vikunja_task_comments({ operation: 'list', id: 42 })
+
+// Add a comment to a task
+vikunja_task_comments({ operation: 'add', id: 42, comment: "Starting work on this task" })
+
+// Update an existing comment
+vikunja_task_comments({ operation: 'update', id: 42, commentId: 5, comment: "Updated status: in progress" })
+
+// Delete a comment
+vikunja_task_comments({ operation: 'delete', id: 42, commentId: 5 })
+```
+
 ## Response Format
 
 All operations in the Vikunja MCP server follow a standardized response format for consistency and predictability:
@@ -1043,6 +1087,9 @@ This standardized format ensures:
     - Required: `projectId`
   - `list-buckets` - List buckets in a view
     - Required: `projectId`, `viewId`
+  - `list-bucket-tasks` - List tasks within buckets for kanban board visualization
+    - Required: `projectId`, `viewId`
+    - Optional: `bucketId` (filters to a specific bucket)
 
 - `vikunja_task_move` - Move a task between kanban columns
   - `move` - Move a task to a bucket
