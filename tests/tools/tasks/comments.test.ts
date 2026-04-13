@@ -150,19 +150,19 @@ describe('Comment operations', () => {
 
   it('throws a validation error for add without comment text', async () => {
     await expect(handleAddComment({ id: 123 })).rejects.toThrow(
-      'Failed to add comment: Comment text is required for add operation',
+      'Comment text is required for add operation',
     );
   });
 
   it('throws a validation error for update without commentId', async () => {
     await expect(
       handleUpdateComment({ id: 123, comment: 'Updated comment' }),
-    ).rejects.toThrow('Failed to update comment: Comment id is required for update operation');
+    ).rejects.toThrow('Comment id is required for update operation');
   });
 
   it('throws a validation error for delete without commentId', async () => {
     await expect(handleDeleteComment({ id: 123 })).rejects.toThrow(
-      'Failed to delete comment: Comment id is required for delete operation',
+      'Comment id is required for delete operation',
     );
   });
 

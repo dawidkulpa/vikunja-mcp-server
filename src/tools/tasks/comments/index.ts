@@ -37,6 +37,9 @@ export async function handleComment(args: { id?: number; comment?: string }): Mc
     const response = commentResponseFormatter.formatAddCommentResponse(newComment);
     return commentResponseFormatter.formatMcpResponse(response);
   } catch (error) {
+    if (error instanceof MCPError) {
+      throw error;
+    }
     throw new MCPError(
       ErrorCode.API_ERROR,
       `Failed to handle comment: ${error instanceof Error ? error.message : String(error)}`,
@@ -54,6 +57,9 @@ export async function handleListComments(args: { id?: number }): McpTextResponse
     const response = commentResponseFormatter.formatListCommentsResponse(comments);
     return commentResponseFormatter.formatMcpResponse(response);
   } catch (error) {
+    if (error instanceof MCPError) {
+      throw error;
+    }
     throw new MCPError(
       ErrorCode.API_ERROR,
       `Failed to list comments: ${error instanceof Error ? error.message : String(error)}`,
@@ -71,6 +77,9 @@ export async function handleAddComment(args: { id?: number; comment?: string }):
     const response = commentResponseFormatter.formatAddCommentResponse(newComment);
     return commentResponseFormatter.formatMcpResponse(response);
   } catch (error) {
+    if (error instanceof MCPError) {
+      throw error;
+    }
     throw new MCPError(
       ErrorCode.API_ERROR,
       `Failed to add comment: ${error instanceof Error ? error.message : String(error)}`,
@@ -92,6 +101,9 @@ export async function handleUpdateComment(args: {
     const response = commentResponseFormatter.formatUpdateCommentResponse(updatedComment);
     return commentResponseFormatter.formatMcpResponse(response);
   } catch (error) {
+    if (error instanceof MCPError) {
+      throw error;
+    }
     throw new MCPError(
       ErrorCode.API_ERROR,
       `Failed to update comment: ${error instanceof Error ? error.message : String(error)}`,
@@ -112,6 +124,9 @@ export async function handleDeleteComment(args: {
     const response = commentResponseFormatter.formatDeleteCommentResponse(commentId);
     return commentResponseFormatter.formatMcpResponse(response);
   } catch (error) {
+    if (error instanceof MCPError) {
+      throw error;
+    }
     throw new MCPError(
       ErrorCode.API_ERROR,
       `Failed to delete comment: ${error instanceof Error ? error.message : String(error)}`,

@@ -55,7 +55,7 @@ export const CommentOperationsService = {
     const client = await getClientFromContext();
     return await client.tasks.updateTaskComment(taskId, commentId, {
       comment,
-    } as unknown as TaskComment);
+    } as TaskComment);
   },
 
   /**
