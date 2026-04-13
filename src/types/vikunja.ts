@@ -406,3 +406,8 @@ export interface TaskBucketAssignment {
   task_id: number;
   position?: number;
 }
+
+export interface BucketWithTasks extends Bucket {
+  tasks: Task[] | null;
+  count: number;
+}

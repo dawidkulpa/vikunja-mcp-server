@@ -58,13 +58,13 @@ All improvements maintain **100% backward compatibility** with existing implemen
 
 ### Option 1: Install from NPM (Recommended)
 
-The easiest way to use vikunja-mcp is through npx in your Claude Desktop or other MCP-compatible client configuration:
+The easiest way to use vikunja-mcp-server is through npx in your Claude Desktop or other MCP-compatible client configuration:
 
 ```json
 {
   "vikunja": {
     "command": "npx",
-    "args": ["-y", "@democratize-technology/vikunja-mcp"],
+    "args": ["-y", "vikunja-mcp-server"],
     "env": {
       "VIKUNJA_URL": "https://your-vikunja-instance.com/api/v1",
       "VIKUNJA_API_TOKEN": "your-api-token"
@@ -78,8 +78,8 @@ The easiest way to use vikunja-mcp is through npx in your Claude Desktop or othe
 For development or customization:
 
 ```bash
-git clone https://github.com/democratize-technology/vikunja-mcp.git
-cd vikunja-mcp
+git clone https://github.com/dawidkulpa/vikunja-mcp-server.git
+cd vikunja-mcp-server
 npm install
 npm run build
 ```
@@ -90,7 +90,7 @@ Then configure your MCP client:
 {
   "vikunja": {
     "command": "node",
-    "args": ["/path/to/vikunja-mcp/dist/index.js"],
+    "args": ["/path/to/vikunja-mcp-server/dist/index.js"],
     "env": {
       "VIKUNJA_URL": "https://your-vikunja-instance.com/api/v1",
       "VIKUNJA_API_TOKEN": "your-api-token"

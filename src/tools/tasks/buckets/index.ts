@@ -3,6 +3,7 @@ import { BucketOperationsService } from './BucketOperationsService';
 import { BucketResponseFormatter } from './BucketResponseFormatter';
 import {
   BucketValidationService,
+  type ListBucketTasksInput,
   type ListBucketsInput,
   type ListViewsInput,
 } from './BucketValidationService';
@@ -33,4 +34,18 @@ export async function handleListBuckets(
   const buckets = await operationsService.listBuckets(projectId, viewId);
 
   return responseFormatter.formatBuckets(buckets);
+}
+
+export async function handleListBucketTasks(
+  args: ListBucketTasksInput,
+  directClient: VikunjaDirectClient,
+): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
+  const validationService = new BucketValidationService();
+  const operationsService = new BucketOperationsService(directClient);
+  const responseFormatter = new BucketResponseFormatter();
+
+  const validatedInput = validationService.validateListBucketTasksInput(args);
+  const buckets = await operationsService.listBucketTasks(validatedInput.projectId, validatedInput.viewId);
+
+  return responseFormatter.formatBucketTasks(buckets, validatedInput.bucketId);
 }

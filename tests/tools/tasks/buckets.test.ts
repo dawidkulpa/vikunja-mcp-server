@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { handleListBuckets, handleListViews } from '../../../src/tools/tasks/buckets';
+import {
+  handleListBucketTasks,
+  handleListBuckets,
+  handleListViews,
+} from '../../../src/tools/tasks/buckets';
 import { registerTaskBucketsTool } from '../../../src/tools/task-buckets';
 import type { VikunjaDirectClient } from '../../../src/client/direct-client';
 import { createDirectClient } from '../../../src/client/direct-client';
@@ -114,6 +118,160 @@ describe('Bucket operations', () => {
     expect(mockDirectClient.get).not.toHaveBeenCalled();
   });
 
+  it('lists bucket tasks for all buckets with task summaries', async () => {
+    mockDirectClient.get.mockResolvedValue([
+      {
+        id: 4,
+        project_id: 5,
+        view_id: 11,
+        title: 'TODO',
+        position: 100,
+        count: 1,
+        tasks: [
+          {
+            id: 6,
+            project_id: 5,
+            title: 'Write tests',
+            description: 'This description should not appear in the all-buckets summary response.',
+            bucket_id: 4,
+            position: 1,
+            created: '2026-04-13T09:00:00Z',
+          },
+        ],
+      },
+      {
+        id: 7,
+        project_id: 5,
+        view_id: 11,
+        title: 'Open',
+        position: 50,
+        count: 0,
+        tasks: null,
+      },
+    ]);
+
+    const result = await handleListBucketTasks(
+      { projectId: 5, viewId: 11 },
+      mockDirectClient as unknown as VikunjaDirectClient,
+    );
+
+    expect(mockDirectClient.get).toHaveBeenCalledWith('/projects/5/views/11/tasks');
+
+    const markdown = result.content[0]?.text ?? '';
+    expect(markdown).toContain('## ✅ Success');
+    expect(markdown).toContain('Found 2 bucket(s) with task summaries');
+    expect(markdown).toContain('### Bucket: TODO (ID: 4)');
+    expect(markdown).toContain('### Bucket: Open (ID: 7)');
+    expect(markdown).toContain('1. Task #6 — Write tests (position: 1)');
+    expect(markdown).toContain('- No tasks in this bucket');
+    expect(markdown).not.toContain('This description should not appear');
+  });
+
+  it('filters bucket tasks by bucketId and returns detailed task information', async () => {
+    mockDirectClient.get.mockResolvedValue([
+      {
+        id: 4,
+        project_id: 5,
+        view_id: 11,
+        title: 'TODO',
+        position: 100,
+        count: 1,
+        tasks: [
+          {
+            id: 6,
+            project_id: 5,
+            title: 'Write tests',
+            description:
+              '0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 EXTRA',
+            bucket_id: 4,
+            position: 1,
+            created: '2026-04-13T09:00:00Z',
+          },
+        ],
+      },
+      {
+        id: 7,
+        project_id: 5,
+        view_id: 11,
+        title: 'Done',
+        position: 200,
+        count: 1,
+        tasks: [
+          {
+            id: 9,
+            project_id: 5,
+            title: 'Other task',
+            bucket_id: 7,
+            position: 2,
+          },
+        ],
+      },
+    ]);
+
+    const result = await handleListBucketTasks(
+      { projectId: 5, viewId: 11, bucketId: 4 },
+      mockDirectClient as unknown as VikunjaDirectClient,
+    );
+
+    const markdown = result.content[0]?.text ?? '';
+    expect(markdown).toContain('Found 1 task(s) in bucket TODO');
+    expect(markdown).toContain('### Bucket: TODO (ID: 4)');
+    expect(markdown).toContain('- Created: 2026-04-13T09:00:00Z');
+    expect(markdown).toContain(
+      '- Description: 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0...',
+    );
+    expect(markdown).not.toContain('Other task');
+  });
+
+  it('formats empty buckets when the API returns tasks as null and count 0', async () => {
+    mockDirectClient.get.mockResolvedValue([
+      {
+        id: 7,
+        project_id: 5,
+        view_id: 11,
+        title: 'Open',
+        position: 50,
+        count: 0,
+        tasks: null,
+      },
+    ]);
+
+    const result = await handleListBucketTasks(
+      { projectId: 5, viewId: 11 },
+      mockDirectClient as unknown as VikunjaDirectClient,
+    );
+
+    const markdown = result.content[0]?.text ?? '';
+    expect(markdown).toContain('### Bucket: Open (ID: 7)');
+    expect(markdown).toContain('- Task count: 0');
+    expect(markdown).toContain('- No tasks in this bucket');
+  });
+
+  it('throws a validation error when list-bucket-tasks is called without viewId', async () => {
+    await expect(
+      handleListBucketTasks({ projectId: 5 }, mockDirectClient as unknown as VikunjaDirectClient),
+    ).rejects.toMatchObject({
+      code: ErrorCode.VALIDATION_ERROR,
+      message: 'viewId is required for list-bucket-tasks operation',
+    });
+
+    expect(mockDirectClient.get).not.toHaveBeenCalled();
+  });
+
+  it('throws a validation error when list-bucket-tasks is called without projectId', async () => {
+    await expect(
+      handleListBucketTasks(
+        { viewId: 11 } as unknown as { projectId?: number; viewId?: number; bucketId?: number },
+        mockDirectClient as unknown as VikunjaDirectClient,
+      ),
+    ).rejects.toMatchObject({
+      code: ErrorCode.VALIDATION_ERROR,
+      message: 'projectId is required',
+    });
+
+    expect(mockDirectClient.get).not.toHaveBeenCalled();
+  });
+
   it('registers the tool and routes list-views successfully', async () => {
     const mockClientFactory = { name: 'factory' } as any;
     mockDirectClient.get.mockResolvedValue([
@@ -160,6 +318,43 @@ describe('Bucket operations', () => {
     const handler = getRegisteredHandler(mockServer);
 
     await expect(handler({ operation: 'list-buckets', projectId: 5, viewId: 42 })).rejects.toBe(apiError);
+  });
+
+  it('registers the tool and routes list-bucket-tasks successfully', async () => {
+    mockDirectClient.get.mockResolvedValue([
+      {
+        id: 4,
+        project_id: 7,
+        view_id: 11,
+        title: 'TODO',
+        position: 100,
+        count: 1,
+        tasks: [
+          {
+            id: 6,
+            project_id: 7,
+            title: 'Route task',
+            bucket_id: 4,
+            position: 1,
+          },
+        ],
+      },
+    ]);
+
+    registerTaskBucketsTool(mockServer as unknown as McpServer, mockAuthManager as any);
+    const handler = getRegisteredHandler(mockServer);
+
+    const result = await handler({
+      operation: 'list-bucket-tasks',
+      projectId: 7,
+      viewId: 11,
+      bucketId: 4,
+    });
+
+    expect(mockDirectClient.get).toHaveBeenCalledWith('/projects/7/views/11/tasks');
+    expect(result).toMatchObject({
+      content: [{ type: 'text', text: expect.stringContaining('Route task') }],
+    });
   });
 
   it('throws an auth error when the user is not authenticated', async () => {

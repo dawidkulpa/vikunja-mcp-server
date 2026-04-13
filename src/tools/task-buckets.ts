@@ -12,7 +12,11 @@ import { getClientFromContext, setGlobalClientFactory } from '../client';
 import { logger } from '../utils/logger';
 import { createAuthRequiredError } from '../utils/error-handler';
 import { createDirectClient } from '../client/direct-client';
-import { handleListViews, handleListBuckets } from '../tools/tasks/buckets/index';
+import {
+  handleListBucketTasks,
+  handleListBuckets,
+  handleListViews,
+} from '../tools/tasks/buckets/index';
 
 export function registerTaskBucketsTool(
   server: McpServer,
@@ -23,9 +27,10 @@ export function registerTaskBucketsTool(
     'vikunja_buckets',
     'List project views and buckets for kanban board management',
     {
-      operation: z.enum(['list-views', 'list-buckets']),
+      operation: z.enum(['list-views', 'list-buckets', 'list-bucket-tasks']),
       projectId: z.number(),
       viewId: z.number().optional(),
+      bucketId: z.number().optional(),
     },
     async (args) => {
       try {
@@ -57,6 +62,25 @@ export function registerTaskBucketsTool(
                 projectId: args.projectId,
                 viewId: args.viewId,
               },
+              directClient,
+            );
+
+          case 'list-bucket-tasks':
+            if (args.viewId === undefined) {
+              return await handleListBucketTasks({ projectId: args.projectId }, directClient);
+            }
+
+            return await handleListBucketTasks(
+              args.bucketId === undefined
+                ? {
+                    projectId: args.projectId,
+                    viewId: args.viewId,
+                  }
+                : {
+                    projectId: args.projectId,
+                    viewId: args.viewId,
+                    bucketId: args.bucketId,
+                  },
               directClient,
             );
 

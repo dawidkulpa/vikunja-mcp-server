@@ -18,8 +18,8 @@ import { createVikunjaClientFactory, setGlobalClientFactory, type VikunjaClientF
 dotenv.config({ quiet: true });
 
 const server = new McpServer({
-  name: 'vikunja-mcp',
-  version: '0.2.0',
+  name: 'vikunja-mcp-server',
+  version: '1.0.0',
 });
 
 const authManager = new AuthManager();

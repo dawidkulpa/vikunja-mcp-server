@@ -19,7 +19,7 @@ If you're using the NPM package, no changes are required:
 {
   "vikunja": {
     "command": "npx",
-    "args": ["-y", "@democratize-technology/vikunja-mcp"],
+    "args": ["-y", "vikunja-mcp-server"],
     "env": {
       "VIKUNJA_URL": "https://your-vikunja-instance.com/api/v1",
       "VIKUNJA_API_TOKEN": "your-api-token"
@@ -100,7 +100,7 @@ expect(validateFilter("priority >= 999999")).toMatch(/too large/);
 Update your development dependencies:
 
 ```bash
-npm install @democratize-technology/vikunja-mcp@latest
+npm install vikunja-mcp-server@latest
 ```
 
 No changes to your development workflow are required.
@@ -155,7 +155,7 @@ If using Docker, your existing configuration works:
 ```dockerfile
 # Existing configuration continues to work
 FROM node:20-alpine
-RUN npm install -g @democratize-technology/vikunja-mcp@latest
+RUN npm install -g vikunja-mcp-server@latest
 
 ENV VIKUNJA_URL=https://your-vikunja-instance.com/api/v1
 ENV VIKUNJA_API_TOKEN=your-token
@@ -164,7 +164,7 @@ ENV VIKUNJA_API_TOKEN=your-token
 ENV CIRCUIT_BREAKER_ENABLED=true
 ENV FILTER_MAX_LENGTH=1000
 
-CMD ["vikunja-mcp"]
+CMD ["vikunja-mcp-server"]
 ```
 
 ## Security Improvements
@@ -301,14 +301,14 @@ If you encounter any issues (unlikely due to extensive testing):
 
 ```bash
 # Rollback to previous version
-npm install -g @democratize-technology/vikunja-mcp@0.1.0
+npm install -g vikunja-mcp-server@0.1.0
 ```
 
 ### Docker Users
 
 ```dockerfile
 FROM node:20-alpine
-RUN npm install -g @democratize-technology/vikunja-mcp@0.1.0
+RUN npm install -g vikunja-mcp-server@0.1.0
 # ... rest of your configuration
 ```
 
@@ -324,8 +324,8 @@ npm run build
 
 ### Getting Help
 
-- **GitHub Issues**: Report bugs at https://github.com/democratize-technology/vikunja-mcp/issues
-- **Documentation**: Updated docs at https://github.com/democratize-technology/vikunja-mcp#readme
+- **GitHub Issues**: Report bugs at https://github.com/dawidkulpa/vikunja-mcp-server/issues
+- **Documentation**: Updated docs at https://github.com/dawidkulpa/vikunja-mcp-server#readme
 - **Architecture Details**: See [ARCHITECTURE_SIMPLIFICATION.md](ARCHITECTURE_SIMPLIFICATION.md)
 
 ### Migration Assistance
