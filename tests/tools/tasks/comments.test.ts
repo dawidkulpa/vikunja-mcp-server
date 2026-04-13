@@ -112,6 +112,7 @@ describe('Comment operations', () => {
     });
 
     expect(mockClient.tasks.updateTaskComment).toHaveBeenCalledWith(123, 9, {
+      task_id: 123,
       comment: 'Updated comment',
     });
     expect(result).toMatchObject({
@@ -197,6 +198,7 @@ describe('Comment operations', () => {
       comment: 'hello',
     });
     expect(mockClient.tasks.updateTaskComment).toHaveBeenCalledWith(5, 2, {
+      task_id: 5,
       comment: 'updated',
     });
     expect(mockClient.tasks.deleteTaskComment).toHaveBeenCalledWith(5, 2);

@@ -54,8 +54,9 @@ export const CommentOperationsService = {
   async updateComment(taskId: number, commentId: number, comment: string): Promise<TaskComment> {
     const client = await getClientFromContext();
     return await client.tasks.updateTaskComment(taskId, commentId, {
+      task_id: taskId,
       comment,
-    } as TaskComment);
+    });
   },
 
   /**
