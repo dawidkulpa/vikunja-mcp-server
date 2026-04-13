@@ -1023,6 +1023,7 @@ This standardized format ensures:
   - `assign` - Bulk assign users to tasks
   - `unassign` - Remove users from tasks
   - `comment` - List or add comments to tasks
+    - For full comment CRUD, use `vikunja_task_comments`
   - `bulk-update` - Update multiple tasks at once
     - Required: taskIds array, field name, value
     - Supported fields: done, priority, due_date, project_id, assignees, labels
@@ -1035,6 +1036,33 @@ This standardized format ensures:
     - ⚠️ Performance: Makes individual delete calls for each task
     - Recommended: Process in batches of 20 or fewer tasks
   - `attach` - Not implemented (file handling not available in MCP)
+
+### Focused Task Tools ✅
+- `vikunja_buckets` - List project views and kanban buckets
+  - `list-views` - List all views for a project
+    - Required: `projectId`
+  - `list-buckets` - List buckets in a view
+    - Required: `projectId`, `viewId`
+
+- `vikunja_task_move` - Move a task between kanban columns
+  - `move` - Move a task to a bucket
+    - Required: `projectId`, `viewId`, `bucketId`, `taskId`
+    - Optional: `position`
+
+- `vikunja_task_activity` - Read task activity history
+  - `list` - List activity entries for a task
+    - Required: `taskId`
+    - Optional: `page` (defaults to `1`)
+
+- `vikunja_task_comments` - Full comment CRUD for tasks
+  - `list` - List all comments on a task
+    - Required: `id` (task ID)
+  - `add` - Add a comment
+    - Required: `id`, `comment`
+  - `update` - Update an existing comment
+    - Required: `id`, `commentId`, `comment`
+  - `delete` - Delete a comment
+    - Required: `id`, `commentId`
 
 ### Batch Import ✅
 - `vikunja_batch_import` - Import multiple tasks from CSV or JSON (fully implemented)
