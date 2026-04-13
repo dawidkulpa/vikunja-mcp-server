@@ -15,7 +15,7 @@ export async function handleListActivity(
   const responseFormatter = new ActivityResponseFormatter();
 
   const { taskId, page } = validationService.validateListInput(args);
-  const activities = await operationsService.list(taskId, page);
+  const { activities, notAvailable } = await operationsService.list(taskId, page);
 
-  return responseFormatter.formatActivities(activities);
+  return responseFormatter.formatActivities(activities, notAvailable);
 }

@@ -108,12 +108,35 @@ describe('Activity operations', () => {
     expect(mockDirectClient.get).not.toHaveBeenCalled();
   });
 
-  it('propagates direct client MCP errors unchanged', async () => {
+  it('gracefully handles 404 endpoint error with friendly message', async () => {
     const apiError = new MCPError(
       ErrorCode.API_ERROR,
       'Request failed with status 404: Not Found',
       {
         statusCode: 404,
+        endpoint: '/tasks/5/activities',
+      },
+    );
+    mockDirectClient.get.mockRejectedValue(apiError);
+
+    const result = await handleListActivity(
+      { taskId: 5, page: 1 },
+      mockDirectClient as unknown as VikunjaDirectClient,
+    );
+
+    expect(mockDirectClient.get).toHaveBeenCalledWith('/tasks/5/activities');
+    const markdown = result.content[0]?.text ?? '';
+    expect(markdown).toContain('Activity history is not available on this Vikunja instance');
+    expect(markdown).toContain('endpoint not found');
+    expect(markdown).toContain('/tasks/{id}/activities');
+  });
+
+  it('propagates non-404 MCP errors unchanged', async () => {
+    const apiError = new MCPError(
+      ErrorCode.API_ERROR,
+      'Request failed with status 500: Internal Server Error',
+      {
+        statusCode: 500,
         endpoint: '/tasks/5/activities',
       },
     );

@@ -105,7 +105,7 @@ export interface ProjectView {
   id?: number;
   project_id: number;
   title: string;
-  view_kind: 'list' | 'board' | 'table' | 'gantt';
+  view_kind: 'list' | 'board' | 'table' | 'gantt' | 'kanban';
   position?: number;
   bucket_configuration?: unknown;
   created?: string;
