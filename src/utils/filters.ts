@@ -17,6 +17,12 @@ import type {
   ParseError,
 } from '../types/filters';
 
+export interface SimpleFilter {
+  field: string;
+  operator: FilterOperator;
+  value: unknown;
+}
+
 /**
  * Security constants
  */
@@ -101,7 +107,27 @@ export const SecurityValidator = {
    * Validates input string contains only allowed characters
    */
   validateAllowedChars(input: string): boolean {
-    return ALLOWED_CHARS.test(input);
+    if (!ALLOWED_CHARS.test(input)) {
+      return false;
+    }
+
+    const normalized = input.replace(/"/g, '');
+    if (/<\s*\/?\s*[a-zA-Z!]/.test(normalized)) {
+      return false;
+    }
+
+    return !(/[;[\]{}$`~^]/).test(normalized);
+  },
+
+  validateField(field: string): boolean {
+    return [
+      'id', 'project_id', 'done', 'priority', 'percent_done', 'percentDone', 'due_date', 'dueDate',
+      'assignees', 'labels', 'created', 'updated', 'title', 'description'
+    ].includes(field);
+  },
+
+  validateOperator(operator: string): boolean {
+    return ['=', '!=', '>', '>=', '<', '<=', 'like', 'LIKE', 'in', 'not in'].includes(operator);
   },
 
   /**
@@ -239,9 +265,8 @@ function parseUnquotedValue(state: ParseState): string | null {
  * Parse a value (quoted or unquoted)
  */
 function parseValue(state: ParseState): string | null {
-  const quoted = parseQuotedString(state);
-  if (quoted !== null) {
-    return quoted;
+  if (state.position < state.length && state.input[state.position] === '"') {
+    return parseQuotedString(state);
   }
 
   return parseUnquotedValue(state);
@@ -666,9 +691,7 @@ function validateFieldTypeAndValue(field: FilterField, operator: FilterOperator,
 
   // Value type validation
   if (fieldType === 'boolean') {
-    if (typeof value === 'string' && (value === 'true' || value === 'false')) {
-      // String boolean values are acceptable
-    } else if (typeof value !== 'boolean') {
+    if (typeof value !== 'boolean') {
       errors.push(`Field "${field}" requires a boolean value`);
     }
   }
@@ -747,14 +770,15 @@ export function validateCondition(condition: FilterCondition): string[] {
   // Check if condition has valid structure first
   const result = FilterConditionSchema.safeParse(condition);
   if (!result.success) {
-    const errors = result.error.errors.map(e => e.message);
+    return result.error.errors.map(issue => {
+      const path = issue.path[0];
+      if (issue.message.includes('enum value')) {
+        if (path === 'field') return 'Invalid field name';
+        if (path === 'operator') return 'Invalid operator';
+      }
 
-    // Convert Zod enum error to more user-friendly message
-    if (errors.some(e => e.includes('enum value'))) {
-      return ['Invalid field name'];
-    }
-
-    return errors;
+      return issue.message;
+    });
   }
 
   const { field, operator, value } = condition;
@@ -802,6 +826,11 @@ export function validateFilterExpression(
       0,
     );
 
+    const maxConditions = config.maxConditions ?? 50;
+    if (totalConditions > maxConditions) {
+      errors.push(`Too many conditions. Maximum allowed is ${maxConditions}`);
+    }
+
     const threshold = config.performanceWarningThreshold ?? 10;
     if (totalConditions > threshold) {
       warnings.push(
@@ -830,8 +859,8 @@ export function conditionToString(condition: FilterCondition): string {
 
   let valueStr: string;
   if (Array.isArray(value)) {
-    valueStr = value.join(', ');
-  } else if (typeof value === 'string' && operator === 'like') {
+    valueStr = value.map(item => typeof item === 'string' ? `"${item}"` : String(item)).join(', ');
+  } else if (typeof value === 'string') {
     valueStr = `"${value}"`;
   } else if (typeof value === 'boolean') {
     valueStr = value.toString();
@@ -927,4 +956,192 @@ export class FilterBuilder {
   validate(config?: FilterValidationConfig): FilterValidationResult {
     return validateFilterExpression(this.build(), config);
   }
+}
+
+function normalizeSimpleField(field: string): string {
+  const aliases: Record<string, string> = {
+    dueDate: 'due_date',
+    percentDone: 'percent_done',
+    projectId: 'project_id',
+  };
+
+  return aliases[field] || field;
+}
+
+function parseSimpleValue(rawValue: string): unknown {
+  const value = rawValue.trim();
+
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  if (value === 'null') return null;
+
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    return value.slice(1, -1);
+  }
+
+  if (value.startsWith('[') && value.endsWith(']')) {
+    const inner = value.slice(1, -1).trim();
+    if (!inner) return [];
+
+    return inner.split(',').map(item => parseSimpleValue(item.trim())).filter(item => item !== undefined);
+  }
+
+  if (/^-?\d+(?:\.\d+)?$/.test(value)) {
+    return Number(value);
+  }
+
+  return value;
+}
+
+function parseSimpleArrayValue(rawValue: string): unknown[] | null {
+  const value = rawValue.trim();
+
+  if (value.length > MAX_VALUE_LENGTH || !value.startsWith('[') || !value.endsWith(']')) {
+    return null;
+  }
+
+  if (/[{}$`]|__proto__|prototype|constructor|function\s|=>|eval\(|Infinity|NaN/i.test(value)) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed) || parsed.length > 100) {
+      return null;
+    }
+
+    const isSafeItem = (item: unknown): boolean => {
+      if (item === null || typeof item === 'boolean') {
+        return true;
+      }
+
+      if (typeof item === 'number') {
+        return Number.isFinite(item) && Math.abs(item) <= Number.MAX_SAFE_INTEGER;
+      }
+
+      if (typeof item === 'string') {
+        return item.length <= MAX_VALUE_LENGTH && !/__proto__|prototype|constructor|function\s|=>|eval\(|Infinity|NaN/i.test(item);
+      }
+
+      return false;
+    };
+
+    return parsed.every(isSafeItem) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function isComparableValue(value: unknown): value is string | number | boolean {
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+}
+
+export function parseSimpleFilter(filter: string): SimpleFilter | null {
+  if (typeof filter !== 'string' || filter.trim() === '' || filter.length > MAX_VALUE_LENGTH + 100) {
+    return null;
+  }
+
+  const trimmed = filter.trim();
+  const match = trimmed.match(/^(\w+)\s*(not in|in|>=|<=|!=|=|>|<|like|LIKE)\s*(.+)$/);
+  if (!match) {
+    return null;
+  }
+
+  const [, rawField, rawOperator, rawValue] = match;
+  const operator = rawOperator || '';
+  const field = normalizeSimpleField(rawField || '');
+  if (!SecurityValidator.validateField(field) || !SecurityValidator.validateOperator(operator)) {
+    return null;
+  }
+  const typedOperator = operator as FilterOperator;
+
+  if (/[{}$`]|__proto__|prototype|constructor|function\s|=>|Infinity|NaN|eval\(/i.test(rawValue || '')) {
+    return null;
+  }
+
+  if (operator === 'in' || operator === 'not in') {
+    const parsedArray = parseSimpleArrayValue(rawValue || '');
+    if (parsedArray === null) {
+      return null;
+    }
+
+    const result: SimpleFilter = {
+      field,
+      operator: typedOperator,
+      value: parsedArray,
+    };
+    return result;
+  }
+
+  const result: SimpleFilter = {
+    field,
+    operator: typedOperator,
+    value: parseSimpleValue(rawValue || ''),
+  };
+  return result;
+}
+
+function getTaskFieldValue(task: Record<string, unknown>, field: string): unknown {
+  const normalizedField = normalizeSimpleField(field);
+  if (normalizedField in task) {
+    return task[normalizedField];
+  }
+
+  const camelCaseField = normalizedField.replace(/_([a-z])/g, (_, char: string) => char.toUpperCase());
+  return task[camelCaseField];
+}
+
+function compareArrays(taskValue: unknown[], operator: string, filterValue: unknown): boolean {
+  const taskIds = taskValue.map(item => {
+    if (item && typeof item === 'object' && 'id' in item) {
+      return (item as { id?: unknown }).id;
+    }
+    return item;
+  });
+  const filterArray = Array.isArray(filterValue) ? filterValue : [filterValue];
+  const hasMatch = filterArray.some(value => taskIds.includes(value));
+
+  if (operator === 'not in') return !hasMatch;
+  return hasMatch;
+}
+
+export function applyClientSideFilter<T extends Record<string, unknown>>(tasks: T[], filter: SimpleFilter | null): T[] {
+  if (!filter) {
+    return tasks;
+  }
+
+  return tasks.filter(task => {
+    const taskValue = getTaskFieldValue(task, filter.field);
+    const filterValue = filter.value;
+
+    if (Array.isArray(taskValue)) {
+      return compareArrays(taskValue, filter.operator, filterValue);
+    }
+
+    switch (filter.operator) {
+      case '=':
+        return taskValue === filterValue;
+      case '!=':
+        return taskValue !== filterValue;
+      case '>':
+        return isComparableValue(taskValue) && isComparableValue(filterValue) && taskValue > filterValue;
+      case '>=':
+        return isComparableValue(taskValue) && isComparableValue(filterValue) && taskValue >= filterValue;
+      case '<':
+        return isComparableValue(taskValue) && isComparableValue(filterValue) && taskValue < filterValue;
+      case '<=':
+        return isComparableValue(taskValue) && isComparableValue(filterValue) && taskValue <= filterValue;
+      case 'like':
+      case 'LIKE':
+        return typeof taskValue === 'string' && typeof filterValue === 'string'
+          ? taskValue.toLowerCase().includes(filterValue.toLowerCase())
+          : false;
+      case 'in':
+        return Array.isArray(filterValue) ? filterValue.includes(taskValue) : taskValue === filterValue;
+      case 'not in':
+        return Array.isArray(filterValue) ? !filterValue.includes(taskValue) : taskValue !== filterValue;
+      default:
+        return false;
+    }
+  });
 }

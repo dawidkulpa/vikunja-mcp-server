@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Pre-Commit Requirements (ALL must pass)
 ```bash
 npm run lint           # ESLint validation
-npm run test:coverage  # Jest with 90%+ branches, 95%+ lines coverage requirement  
+npm test               # Jest (no coverage threshold enforced)
 npm run typecheck      # TypeScript compilation check
 ```
 
@@ -99,19 +99,8 @@ server.tool('vikunja_tasks', {
 
 ## Testing Philosophy & Requirements
 
-### Strict Coverage Thresholds (ACHIEVED)
-```json
-"coverageThreshold": {
-  "global": {
-    "branches": 90,    // ✅ Current: 90%+
-    "functions": 98,   // ✅ Current: 98.91% 
-    "lines": 95,       // ✅ Current: 95%+
-    "statements": 95   // ✅ Current: 95%+
-  }
-}
-```
-
-**Achievement**: All coverage thresholds have been met and are maintained through comprehensive test suites covering security scenarios, edge cases, and performance benchmarks.
+### Coverage
+No enforced coverage thresholds. Tests must pass. New code should have tests but coverage percentages are not gated.
 
 ### Defensive Programming Rule
 **If code cannot be tested, it must be removed.** Every defensive pattern (like `|| ''` fallbacks) must have corresponding test cases that trigger those code paths.

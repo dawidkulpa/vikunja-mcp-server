@@ -280,7 +280,7 @@ describe('Storage Integration', () => {
       process.env.VIKUNJA_MCP_STORAGE_DATABASE_PATH = testDbPath;
 
       // Perform migration
-      const result = await migrateMemoryToPersistent();
+      const result = migrateMemoryToPersistent();
 
       expect(result.success).toBe(true);
       expect(result.migratedSessions).toBe(0); // No migration in simplified version
@@ -304,12 +304,12 @@ describe('Storage Integration', () => {
       expect(filters2[0].name).toBe('Memory Filter 3');
       expect(filters2[0].projectId).toBe(123);
 
-      await persistentStorage1.close();
-      await persistentStorage2.close();
+      await (verifyStorage1 as any).close();
+      await (verifyStorage2 as any).close();
     });
 
     it('should handle empty memory storage gracefully', async () => {
-      const result = await migrateMemoryToPersistent();
+      const result = migrateMemoryToPersistent();
 
       expect(result.success).toBe(true);
       expect(result.migratedSessions).toBe(0);
@@ -330,7 +330,7 @@ describe('Storage Integration', () => {
       process.env.VIKUNJA_MCP_STORAGE_TYPE = 'sqlite';
       process.env.VIKUNJA_MCP_STORAGE_DATABASE_PATH = '/readonly/invalid/path/test.db';
 
-      const result = await migrateMemoryToPersistent();
+      const result = migrateMemoryToPersistent();
 
       expect(result.success).toBe(true); // Always succeeds in simplified version
       expect(result.errors).toHaveLength(0);
@@ -361,12 +361,12 @@ describe('Storage Integration', () => {
       process.env.VIKUNJA_MCP_STORAGE_TYPE = 'sqlite';
       process.env.VIKUNJA_MCP_STORAGE_DATABASE_PATH = testDbPath;
 
-      const result = await migrateMemoryToPersistent();
+      const result = migrateMemoryToPersistent();
       expect(result.success).toBe(true);
 
       // Verify data remains in memory storage (no migration in simplified version)
       const verifyMetadataStorage = await storageManager.getStorage('metadata-session');
-      const filters = await memoryStorage.list();
+      const filters = await verifyMetadataStorage.list();
 
       expect(filters).toHaveLength(1);
       const filter = filters[0];

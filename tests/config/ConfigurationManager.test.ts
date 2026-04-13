@@ -69,29 +69,27 @@ describe('ConfigurationManager', () => {
   });
 
   describe('Environment Variable Loading', () => {
-    it('should load authentication configuration from environment variables', async () => {
+    it('should ignore legacy authentication environment variables', async () => {
       process.env.VIKUNJA_URL = 'https://tasks.example.com';
       process.env.VIKUNJA_API_TOKEN = 'tk_test123';
       process.env.MCP_MODE = 'server';
       
       const config = await ConfigurationManager.getInstance().getConfiguration();
       
-      expect(config.auth.vikunjaUrl).toBe('https://tasks.example.com');
-      expect(config.auth.vikunjaToken).toBe('tk_test123');
-      expect(config.auth.mcpMode).toBe('server');
+      expect(config.auth).toEqual({});
     });
 
-    it('should load logging configuration from environment variables', async () => {
+    it('should ignore legacy logging environment variables', async () => {
       process.env.LOG_LEVEL = 'warn';
       process.env.DEBUG = 'true';
       
       const config = await ConfigurationManager.getInstance().getConfiguration();
       
-      expect(config.logging.level).toBe('warn');
-      expect(config.logging.debug).toBe(true);
+      expect(config.logging.level).toBe('debug');
+      expect(config.logging.environment).toBe(Environment.DEVELOPMENT);
     });
 
-    it('should load rate limiting configuration from environment variables', async () => {
+    it('should ignore legacy rate limiting environment variables', async () => {
       process.env.RATE_LIMIT_ENABLED = 'false';
       process.env.RATE_LIMIT_PER_MINUTE = '100';
       process.env.EXPENSIVE_TOOL_TIMEOUT = '180000';
@@ -99,18 +97,17 @@ describe('ConfigurationManager', () => {
       
       const config = await ConfigurationManager.getInstance().getConfiguration();
       
-      expect(config.rateLimiting.enabled).toBe(false);
-      expect(config.rateLimiting.default.requestsPerMinute).toBe(100);
-      expect(config.rateLimiting.expensive.executionTimeout).toBe(180000);
-      expect(config.rateLimiting.bulk.maxRequestSize).toBe(10485760);
+      expect(config.rateLimiting.default.requestsPerMinute).toBe(60);
+      expect(config.rateLimiting.expensive.executionTimeout).toBe(120000);
+      expect(config.rateLimiting.bulk.maxRequestSize).toBe(5242880);
     });
 
-    it('should load feature flags from environment variables', async () => {
+    it('should use fixed feature enablement rather than environment variables', async () => {
       process.env.VIKUNJA_ENABLE_SERVER_SIDE_FILTERING = 'true';
       
-      const config = await ConfigurationManager.getInstance().getConfiguration();
-      
-      expect(config.featureFlags.enableServerSideFiltering).toBe(true);
+      const manager = ConfigurationManager.getInstance();
+      await expect(manager.getConfiguration()).resolves.toBeDefined();
+      expect(manager.isFeatureEnabled('enableServerSideFiltering')).toBe(true);
     });
   });
 
@@ -121,10 +118,8 @@ describe('ConfigurationManager', () => {
       const config = await ConfigurationManager.getInstance().getConfiguration();
       
       expect(config.logging.level).toBe('debug');
-      expect(config.logging.debug).toBe(true);
-      expect(config.rateLimiting.enabled).toBe(false);
-      expect(config.featureFlags.enableServerSideFiltering).toBe(true);
-      expect(config.featureFlags.enableExperimentalFeatures).toBe(true);
+      expect(config.logging.environment).toBe(Environment.DEVELOPMENT);
+      expect(config.rateLimiting.default.requestsPerMinute).toBe(60);
     });
 
     it('should apply test environment profile', async () => {
@@ -133,9 +128,8 @@ describe('ConfigurationManager', () => {
       const config = await ConfigurationManager.getInstance().getConfiguration();
       
       expect(config.logging.level).toBe('error');
-      expect(config.logging.debug).toBe(false);
-      expect(config.rateLimiting.enabled).toBe(false);
-      expect(config.featureFlags.enableServerSideFiltering).toBe(false);
+      expect(config.logging.environment).toBe(Environment.TEST);
+      expect(config.rateLimiting.default.requestsPerMinute).toBe(60);
     });
 
     it('should apply production environment profile', async () => {
@@ -144,10 +138,8 @@ describe('ConfigurationManager', () => {
       const config = await ConfigurationManager.getInstance().getConfiguration();
       
       expect(config.logging.level).toBe('info');
-      expect(config.logging.debug).toBe(false);
-      expect(config.rateLimiting.enabled).toBe(true);
-      expect(config.featureFlags.enableServerSideFiltering).toBe(true);
-      expect(config.featureFlags.enableAdvancedMetrics).toBe(true);
+      expect(config.logging.environment).toBe(Environment.PRODUCTION);
+      expect(config.rateLimiting.default.requestsPerMinute).toBe(60);
     });
 
     it('should cache configuration and return same instance on subsequent calls', async () => {
@@ -170,13 +162,19 @@ describe('ConfigurationManager', () => {
   });
 
   describe('Configuration Override Priority', () => {
-    it('should allow environment variables to override profile defaults', async () => {
+    it('should allow additional sources to override profile defaults', async () => {
       process.env.NODE_ENV = 'development'; // Profile sets debug = true
-      process.env.DEBUG = 'false'; // Environment variable overrides
+      const manager = ConfigurationManager.getInstance({
+        sources: {
+          logging: {
+            level: 'warn'
+          }
+        }
+      });
       
-      const config = await ConfigurationManager.getInstance().getConfiguration();
+      const config = await manager.getConfiguration();
       
-      expect(config.logging.debug).toBe(false);
+      expect(config.logging.level).toBe('warn');
     });
 
     it('should allow additional sources to override environment variables', async () => {
@@ -197,21 +195,29 @@ describe('ConfigurationManager', () => {
   });
 
   describe('Type Parsing', () => {
-    it('should parse boolean values correctly', async () => {
+    it('should keep schema defaults when boolean env vars are provided', async () => {
       process.env.DEBUG = 'true';
       process.env.RATE_LIMIT_ENABLED = 'false';
       
       const config = await ConfigurationManager.getInstance().getConfiguration();
       
-      expect(config.logging.debug).toBe(true);
-      expect(config.rateLimiting.enabled).toBe(false);
+      expect(config.logging.level).toBe('debug');
+      expect(config.rateLimiting.default.requestsPerMinute).toBe(60);
     });
 
-    it('should parse integer values correctly', async () => {
-      process.env.RATE_LIMIT_PER_MINUTE = '42';
-      process.env.MAX_REQUEST_SIZE = '2097152';
+    it('should preserve integer values from explicit additional sources', async () => {
+      const manager = ConfigurationManager.getInstance({
+        sources: {
+          rateLimiting: {
+            default: {
+              requestsPerMinute: 42,
+              maxRequestSize: 2097152,
+            }
+          }
+        }
+      });
       
-      const config = await ConfigurationManager.getInstance().getConfiguration();
+      const config = await manager.getConfiguration();
       
       expect(config.rateLimiting.default.requestsPerMinute).toBe(42);
       expect(config.rateLimiting.default.maxRequestSize).toBe(2097152);
@@ -232,11 +238,19 @@ describe('ConfigurationManager', () => {
       expect(typeof config).toBe('object');
     });
 
-    it('should preserve string values when not numeric or boolean', async () => {
-      process.env.VIKUNJA_URL = 'https://tasks.example.com';
-      process.env.LOG_LEVEL = 'warn';
+    it('should preserve string values from explicit configuration sources', async () => {
+      const manager = ConfigurationManager.getInstance({
+        sources: {
+          auth: {
+            vikunjaUrl: 'https://tasks.example.com'
+          },
+          logging: {
+            level: 'warn'
+          }
+        }
+      });
       
-      const config = await ConfigurationManager.getInstance().getConfiguration();
+      const config = await manager.getConfiguration();
       
       expect(config.auth.vikunjaUrl).toBe('https://tasks.example.com');
       expect(config.logging.level).toBe('warn');
@@ -270,12 +284,16 @@ describe('ConfigurationManager', () => {
       await expect(manager.getConfiguration()).rejects.toThrow(ConfigurationError);
     });
 
-    it('should reject invalid log levels', async () => {
+    it('should ignore invalid log levels from environment variables', async () => {
       process.env.LOG_LEVEL = 'invalid';
       
       await expect(
         ConfigurationManager.getInstance().getConfiguration()
-      ).rejects.toThrow(ConfigurationError);
+      ).resolves.toMatchObject({
+        logging: {
+          level: 'debug'
+        }
+      });
     });
 
     it('should provide detailed validation errors', async () => {
@@ -311,26 +329,27 @@ describe('ConfigurationManager', () => {
     it('should return auth configuration section', async () => {
       const authConfig = await ConfigurationManager.getInstance().getAuthConfig();
       
-      expect(authConfig.vikunjaUrl).toBe('https://tasks.example.com');
+      expect(authConfig.vikunjaUrl).toBeUndefined();
       expect(authConfig.vikunjaToken).toBeUndefined();
     });
 
     it('should return logging configuration section', async () => {
       const loggingConfig = await ConfigurationManager.getInstance().getLoggingConfig();
       
-      expect(loggingConfig.level).toBe('warn');
+      expect(loggingConfig.level).toBe('debug');
     });
 
     it('should return rate limiting configuration section', async () => {
       const rateLimitConfig = await ConfigurationManager.getInstance().getRateLimitConfig();
       
-      expect(rateLimitConfig.default.requestsPerMinute).toBe(30);
+      expect(rateLimitConfig.default.requestsPerMinute).toBe(60);
     });
 
-    it('should return feature flags configuration section', async () => {
-      const featureFlagsConfig = await ConfigurationManager.getInstance().getFeatureFlagsConfig();
-      
-      expect(featureFlagsConfig.enableServerSideFiltering).toBe(true);
+    it('should expose feature checks through isFeatureEnabled', async () => {
+      const manager = ConfigurationManager.getInstance();
+
+      expect(manager.isFeatureEnabled('enableServerSideFiltering')).toBe(true);
+      expect(manager.isFeatureEnabled('enableAdvancedMetrics')).toBe(false);
     });
 
     it('should check if feature is enabled', async () => {

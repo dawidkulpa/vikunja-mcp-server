@@ -117,30 +117,3 @@ export interface StandardErrorResponse {
   /** Additional error details */
   details?: Record<string, unknown>;
 }
-
-/**
- * Helper function to create a standard error response
- * Kept for error handling compatibility
- */
-export function createErrorResponse(
-  operation: string,
-  message: string,
-  code?: string,
-  details?: Record<string, unknown>,
-): StandardErrorResponse {
-  const response: StandardErrorResponse = {
-    success: false,
-    operation,
-    message,
-  };
-
-  if (code !== undefined) {
-    response.code = code;
-  }
-
-  if (details !== undefined) {
-    response.details = details;
-  }
-
-  return response;
-}

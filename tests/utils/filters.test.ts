@@ -40,7 +40,7 @@ describe('Consolidated Filter Utilities', () => {
 
       const errors = validateCondition(condition);
       expect(errors).toHaveLength(1);
-      expect(errors[0]).toContain('Invalid enum value');
+      expect(errors[0]).toContain('Invalid field name');
     });
 
     it('should reject invalid operators with Zod error', () => {
@@ -52,7 +52,7 @@ describe('Consolidated Filter Utilities', () => {
 
       const errors = validateCondition(condition);
       expect(errors).toHaveLength(1);
-      expect(errors[0]).toContain('Invalid enum value');
+      expect(errors[0]).toContain('Invalid operator');
     });
 
     it('should reject non-boolean values for done field', () => {
@@ -100,7 +100,7 @@ describe('Consolidated Filter Utilities', () => {
 
     it('should reject expressions with too many conditions', () => {
       const conditions = Array(60).fill(null).map((_, i) => ({
-        field: 'id' as const,
+        field: 'priority' as const,
         operator: '=' as const,
         value: i
       }));
@@ -114,12 +114,12 @@ describe('Consolidated Filter Utilities', () => {
 
       const result = validateFilterExpression(expression);
       expect(result.valid).toBe(false);
-      expect(result.errors[0]).toContain('Too many conditions');
+      expect(result.errors).toContain('Too many conditions. Maximum allowed is 50');
     });
 
     it('should handle custom max conditions', () => {
       const conditions = Array(10).fill(null).map((_, i) => ({
-        field: 'id' as const,
+        field: 'priority' as const,
         operator: '=' as const,
         value: i
       }));
@@ -133,7 +133,7 @@ describe('Consolidated Filter Utilities', () => {
 
       const result = validateFilterExpression(expression, { maxConditions: 5 });
       expect(result.valid).toBe(false);
-      expect(result.errors[0]).toContain('Too many conditions');
+      expect(result.errors).toContain('Too many conditions. Maximum allowed is 5');
     });
   });
 
@@ -194,7 +194,7 @@ describe('Consolidated Filter Utilities', () => {
       };
 
       const result = groupToString(group);
-      expect(result).toBe('done = true OR priority > 3');
+      expect(result).toBe('(done = true OR priority > 3)');
     });
   });
 
@@ -229,7 +229,7 @@ describe('Consolidated Filter Utilities', () => {
       };
 
       const result = expressionToString(expression);
-      expect(result).toBe('done = true AND priority > 3 OR priority < 1');
+      expect(result).toBe('done = true && (priority > 3 OR priority < 1)');
     });
   });
 
@@ -251,14 +251,14 @@ describe('Consolidated Filter Utilities', () => {
       const maliciousInput = 'title = test; DROP TABLE users;';
       const result = parseFilterString(maliciousInput);
       expect(result.expression).toBeNull();
-      expect(result.error?.message).toBe('Invalid filter syntax');
+      expect(result.error?.message).toBe('Filter string contains invalid characters');
     });
 
     it('should handle simple valid input', () => {
       const result = parseFilterString('done = true');
       // Note: Simplified implementation always returns a basic structure for valid input
       expect(result.expression).not.toBeNull();
-      expect(result.error).toBeNull();
+      expect(result.error).toBeUndefined();
     });
   });
 
@@ -424,7 +424,7 @@ describe('Consolidated Filter Utilities', () => {
         .where('priority', '>', 3)
         .toString();
 
-      expect(result).toBe('done = true AND priority > 3');
+      expect(result).toBe('(done = true && priority > 3)');
     });
 
     it('should build with OR conditions', () => {
@@ -436,7 +436,7 @@ describe('Consolidated Filter Utilities', () => {
         .where('done', '=', false)
         .toString();
 
-      expect(result).toBe('done = true OR priority = 3 AND done = false');
+      expect(result).toBe('(done = true || priority = 3 || done = false)');
     });
 
     it('should build filter expression', () => {

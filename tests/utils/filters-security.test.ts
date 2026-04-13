@@ -67,7 +67,7 @@ describe('Filter Security Tests', () => {
         expect(result.expression).toBeNull();
         expect(result.error).toBeDefined();
         // Security is working - dangerous inputs are rejected at different validation stages
-        expect(result.error?.message).toMatch(/Invalid number|Unexpected token|Invalid filter syntax/);
+        expect(result.error?.message).toMatch(/Invalid number|Unexpected token|Invalid filter syntax|invalid characters/i);
       });
     });
 

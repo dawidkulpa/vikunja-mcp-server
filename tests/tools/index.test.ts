@@ -51,6 +51,14 @@ jest.mock('../../src/tools/export', () => ({
   registerExportTool: jest.fn(),
 }));
 
+jest.mock('../../src/tools/task-buckets', () => ({
+  registerTaskBucketsTool: jest.fn(),
+}));
+
+jest.mock('../../src/tools/task-move', () => ({
+  registerTaskMoveTool: jest.fn(),
+}));
+
 // Import mocked functions
 import { registerAuthTool } from '../../src/tools/auth';
 import { registerTasksTool } from '../../src/tools/tasks';
@@ -63,6 +71,8 @@ import { registerTemplatesTool } from '../../src/tools/templates';
 import { registerWebhooksTool } from '../../src/tools/webhooks';
 import { registerBatchImportTool } from '../../src/tools/batch-import';
 import { registerExportTool } from '../../src/tools/export';
+import { registerTaskBucketsTool } from '../../src/tools/task-buckets';
+import { registerTaskMoveTool } from '../../src/tools/task-move';
 
 describe('Tool Registration', () => {
   let mockServer: jest.Mocked<McpServer>;
@@ -84,8 +94,8 @@ describe('Tool Registration', () => {
   });
 
   describe('registerTools', () => {
-    it('should register auth and tasks tools without clientFactory', () => {
-      // Arrange - test without clientFactory (only auth and tasks tools registered)
+    it('should register auth, tasks, bucket, and move tools without clientFactory', () => {
+      // Arrange - test without clientFactory (only auth/tasks tools plus direct-client kanban tools registered)
       mockAuthManager.isAuthenticated.mockReturnValue(true);
       mockAuthManager.getAuthType.mockReturnValue('api-token');
 
@@ -98,6 +108,12 @@ describe('Tool Registration', () => {
 
       expect(registerTasksTool).toHaveBeenCalledTimes(1);
       expect(registerTasksTool).toHaveBeenCalledWith(mockServer, mockAuthManager, undefined);
+
+      expect(registerTaskBucketsTool).toHaveBeenCalledTimes(1);
+      expect(registerTaskBucketsTool).toHaveBeenCalledWith(mockServer, mockAuthManager, undefined);
+
+      expect(registerTaskMoveTool).toHaveBeenCalledTimes(1);
+      expect(registerTaskMoveTool).toHaveBeenCalledWith(mockServer, mockAuthManager, undefined);
 
       // These should NOT be called without clientFactory
       expect(registerProjectsTool).not.toHaveBeenCalled();
@@ -113,7 +129,7 @@ describe('Tool Registration', () => {
 
     it('should register all tools except users and export when using API token auth with clientFactory', () => {
       // Arrange - test with API token auth and clientFactory
-      const mockClientFactory = { test: 'factory' };
+      const mockClientFactory = { test: 'factory' } as any;
       mockAuthManager.isAuthenticated.mockReturnValue(true);
       mockAuthManager.getAuthType.mockReturnValue('api-token');
 
@@ -125,28 +141,40 @@ describe('Tool Registration', () => {
       expect(registerAuthTool).toHaveBeenCalledWith(mockServer, mockAuthManager);
 
       expect(registerTasksTool).toHaveBeenCalledTimes(1);
-      expect(registerTasksTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerTasksTool as jest.Mock).mock.calls[0]?.[0]).toBe(mockServer);
+      expect((registerTasksTool as jest.Mock).mock.calls[0]?.[1]).toBe(mockAuthManager);
+      expect((registerTasksTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
+
+      expect(registerTaskBucketsTool).toHaveBeenCalledTimes(1);
+      expect((registerTaskBucketsTool as jest.Mock).mock.calls[0]?.[0]).toBe(mockServer);
+      expect((registerTaskBucketsTool as jest.Mock).mock.calls[0]?.[1]).toBe(mockAuthManager);
+      expect((registerTaskBucketsTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
+
+      expect(registerTaskMoveTool).toHaveBeenCalledTimes(1);
+      expect((registerTaskMoveTool as jest.Mock).mock.calls[0]?.[0]).toBe(mockServer);
+      expect((registerTaskMoveTool as jest.Mock).mock.calls[0]?.[1]).toBe(mockAuthManager);
+      expect((registerTaskMoveTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerProjectsTool).toHaveBeenCalledTimes(1);
-      expect(registerProjectsTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerProjectsTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerLabelsTool).toHaveBeenCalledTimes(1);
-      expect(registerLabelsTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerLabelsTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerTeamsTool).toHaveBeenCalledTimes(1);
-      expect(registerTeamsTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerTeamsTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerFiltersTool).toHaveBeenCalledTimes(1);
-      expect(registerFiltersTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerFiltersTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerTemplatesTool).toHaveBeenCalledTimes(1);
-      expect(registerTemplatesTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerTemplatesTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerWebhooksTool).toHaveBeenCalledTimes(1);
-      expect(registerWebhooksTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerWebhooksTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerBatchImportTool).toHaveBeenCalledTimes(1);
-      expect(registerBatchImportTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerBatchImportTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       // These should NOT be called with API token auth (backward compatibility)
       expect(registerUsersTool).not.toHaveBeenCalled();
@@ -155,7 +183,7 @@ describe('Tool Registration', () => {
 
     it('should register all tools including users and export when using JWT auth with clientFactory', () => {
       // Arrange - test with JWT auth and clientFactory
-      const mockClientFactory = { test: 'factory' };
+      const mockClientFactory = { test: 'factory' } as any;
       mockAuthManager.isAuthenticated.mockReturnValue(true);
       mockAuthManager.getAuthType.mockReturnValue('jwt');
 
@@ -167,39 +195,45 @@ describe('Tool Registration', () => {
       expect(registerAuthTool).toHaveBeenCalledWith(mockServer, mockAuthManager);
 
       expect(registerTasksTool).toHaveBeenCalledTimes(1);
-      expect(registerTasksTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerTasksTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
+
+      expect(registerTaskBucketsTool).toHaveBeenCalledTimes(1);
+      expect((registerTaskBucketsTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
+
+      expect(registerTaskMoveTool).toHaveBeenCalledTimes(1);
+      expect((registerTaskMoveTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerProjectsTool).toHaveBeenCalledTimes(1);
-      expect(registerProjectsTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerProjectsTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerLabelsTool).toHaveBeenCalledTimes(1);
-      expect(registerLabelsTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerLabelsTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerTeamsTool).toHaveBeenCalledTimes(1);
-      expect(registerTeamsTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerTeamsTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerFiltersTool).toHaveBeenCalledTimes(1);
-      expect(registerFiltersTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerFiltersTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerTemplatesTool).toHaveBeenCalledTimes(1);
-      expect(registerTemplatesTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerTemplatesTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerWebhooksTool).toHaveBeenCalledTimes(1);
-      expect(registerWebhooksTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerWebhooksTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerBatchImportTool).toHaveBeenCalledTimes(1);
-      expect(registerBatchImportTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerBatchImportTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       // These SHOULD be called with JWT auth
       expect(registerUsersTool).toHaveBeenCalledTimes(1);
-      expect(registerUsersTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerUsersTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
       expect(registerExportTool).toHaveBeenCalledTimes(1);
-      expect(registerExportTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerExportTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
     });
 
     it('should not register users and export tools when not authenticated with clientFactory', () => {
       // Arrange
-      const mockClientFactory = { test: 'factory' };
+      const mockClientFactory = { test: 'factory' } as any;
       mockAuthManager.isAuthenticated.mockReturnValue(false);
 
       // Act
@@ -210,28 +244,34 @@ describe('Tool Registration', () => {
       expect(registerAuthTool).toHaveBeenCalledWith(mockServer, mockAuthManager);
 
       expect(registerTasksTool).toHaveBeenCalledTimes(1);
-      expect(registerTasksTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerTasksTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
+
+      expect(registerTaskBucketsTool).toHaveBeenCalledTimes(1);
+      expect((registerTaskBucketsTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
+
+      expect(registerTaskMoveTool).toHaveBeenCalledTimes(1);
+      expect((registerTaskMoveTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerProjectsTool).toHaveBeenCalledTimes(1);
-      expect(registerProjectsTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerProjectsTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerLabelsTool).toHaveBeenCalledTimes(1);
-      expect(registerLabelsTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerLabelsTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerTeamsTool).toHaveBeenCalledTimes(1);
-      expect(registerTeamsTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerTeamsTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerFiltersTool).toHaveBeenCalledTimes(1);
-      expect(registerFiltersTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerFiltersTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerTemplatesTool).toHaveBeenCalledTimes(1);
-      expect(registerTemplatesTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerTemplatesTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerWebhooksTool).toHaveBeenCalledTimes(1);
-      expect(registerWebhooksTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerWebhooksTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       expect(registerBatchImportTool).toHaveBeenCalledTimes(1);
-      expect(registerBatchImportTool).toHaveBeenCalledWith(mockServer, mockAuthManager, mockClientFactory);
+      expect((registerBatchImportTool as jest.Mock).mock.calls[0]?.[2]).toBe(mockClientFactory);
 
       // These should NOT be called when not authenticated
       expect(registerUsersTool).not.toHaveBeenCalled();
@@ -240,7 +280,7 @@ describe('Tool Registration', () => {
 
     it('should register tools in the correct order with JWT auth and clientFactory', () => {
       // Arrange
-      const mockClientFactory = { test: 'factory' };
+      const mockClientFactory = { test: 'factory' } as any;
       mockAuthManager.isAuthenticated.mockReturnValue(true);
       mockAuthManager.getAuthType.mockReturnValue('jwt');
 
@@ -251,6 +291,8 @@ describe('Tool Registration', () => {
       const callOrder = [
         (registerAuthTool as jest.Mock).mock.invocationCallOrder[0],
         (registerTasksTool as jest.Mock).mock.invocationCallOrder[0],
+        (registerTaskBucketsTool as jest.Mock).mock.invocationCallOrder[0],
+        (registerTaskMoveTool as jest.Mock).mock.invocationCallOrder[0],
         (registerProjectsTool as jest.Mock).mock.invocationCallOrder[0],
         (registerLabelsTool as jest.Mock).mock.invocationCallOrder[0],
         (registerTeamsTool as jest.Mock).mock.invocationCallOrder[0],

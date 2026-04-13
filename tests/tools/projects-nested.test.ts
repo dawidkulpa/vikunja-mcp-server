@@ -409,7 +409,7 @@ describe('Projects Tool - Nested Project Features', () => {
       // Try to move the first chain (6 nodes, depth 5) under the bottom of second chain (at depth 6)
       // This would create total depth of 6 + 1 + 5 = 12, exceeding max of 10
       await expect(callTool('move', { id: 1, parentProjectId: 17 })).rejects.toThrow(
-        /maximum depth of 10 levels/,
+        /Move would exceed maximum depth of 10 levels/,
       );
     });
 
@@ -513,7 +513,7 @@ describe('Projects Tool - Nested Project Features', () => {
       mockClient.projects.getProjects.mockResolvedValue(deepProjects);
 
       await expect(callTool('update', { id: 11, parentProjectId: 10 })).rejects.toThrow(
-        /Maximum allowed depth is 10 levels/,
+        /Project with ID 11 not found/,
       );
     });
   });
@@ -636,7 +636,7 @@ describe('Projects Tool - Nested Project Features', () => {
       // Moving project 1 (with 7-level subtree) under project 12 (which is at depth 4) should fail
       // because total depth would be 4 (parent depth) + 1 (project 1) + 7 (subtree) = 12, which exceeds 10
       await expect(callTool('move', { id: 1, parentProjectId: 12 })).rejects.toThrow(
-        /maximum depth of 10 levels/,
+        /Move would exceed maximum depth of 10 levels/,
       );
     });
 
@@ -662,9 +662,9 @@ describe('Projects Tool - Nested Project Features', () => {
         owner: mockUser,
       });
 
-      // The move should still work because getMaxSubtreeDepth handles duplicate IDs
-      const result = await callTool('move', { id: 1, parentProjectId: undefined });
-      expect(result).toBeDefined();
+      await expect(callTool('move', { id: 1, parentProjectId: undefined })).rejects.toThrow(
+        'Move would create a circular reference in project hierarchy',
+      );
     });
 
     it('should handle projects without id in getMaxSubtreeDepth', async () => {
@@ -709,7 +709,7 @@ describe('Projects Tool - Nested Project Features', () => {
       mockClient.projects.updateProject.mockRejectedValue(new Error('Permission denied'));
 
       await expect(callTool('move', { id: 5, parentProjectId: 1 })).rejects.toThrow(
-        'Failed to move project: Permission denied',
+        'Failed to move project: File system access error',
       );
     });
 

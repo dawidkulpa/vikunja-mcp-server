@@ -185,15 +185,15 @@ describe('retry utility', () => {
       
       // First retry: 100ms
       await jest.advanceTimersByTimeAsync(100);
-      expect(debugCalls[0].msg).toContain('Retrying operation after 100ms');
+      expect(debugCalls[0].msg).toContain('Retry attempt 1/3 after 100ms');
       
       // Second retry: 200ms (100 * 2^1)
       await jest.advanceTimersByTimeAsync(200);
-      expect(debugCalls[1].msg).toContain('Retrying operation after 200ms');
+      expect(debugCalls[1].msg).toContain('Retry attempt 2/3 after 200ms');
       
       // Third retry: 400ms (100 * 2^2)
       await jest.advanceTimersByTimeAsync(400);
-      expect(debugCalls[2].msg).toContain('Retrying operation after 400ms');
+      expect(debugCalls[2].msg).toContain('Retry attempt 3/3 after 400ms');
       
       await expect(promise).rejects.toThrow('Error');
     });

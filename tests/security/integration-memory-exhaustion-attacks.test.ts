@@ -100,7 +100,9 @@ describe('Integration Memory Exhaustion Attack Tests', () => {
 
     // Setup mock server
     mockServer = {
-      tool: jest.fn() as jest.MockedFunction<(name: string, schema: any, handler: any) => void>,
+      tool: jest.fn() as jest.MockedFunction<
+        (name: string, description: string, schema: any, handler: any) => void
+      >,
     } as MockServer;
 
     mockGetClientFromContext.mockResolvedValue(mockClient);
@@ -111,12 +113,13 @@ describe('Integration Memory Exhaustion Attack Tests', () => {
     // Get the tool handler
     expect(mockServer.tool).toHaveBeenCalledWith(
       'vikunja_tasks',
+      expect.any(String),
       expect.any(Object),
       expect.any(Function),
     );
     const calls = mockServer.tool.mock.calls;
-    if (calls.length > 0 && calls[0] && calls[0].length > 2) {
-      toolHandler = calls[0][2];
+    if (calls.length > 0 && calls[0] && calls[0].length > 3) {
+      toolHandler = calls[0][3];
     } else {
       throw new Error('Tool handler not found');
     }
@@ -490,7 +493,7 @@ describe('Integration Memory Exhaustion Attack Tests', () => {
       for (const attack of envAttackPayloads) {
         // These should be treated as unknown parameters and ignored
         const result = await toolHandler(attack);
-        expect(result.content[0].text).toContain('"success": true');
+        expect(result.content[0].text).toContain('**success:** true');
       }
 
       // Memory limits should remain intact
@@ -509,7 +512,7 @@ describe('Integration Memory Exhaustion Attack Tests', () => {
 
         for (let attack = 0; attack < attacksPerCycle; attack++) {
           const attackType = attack % 3;
-          let payload;
+          let payload: { subcommand: string; perPage: number; filter?: string };
 
           switch (attackType) {
             case 0: // Memory limit attack

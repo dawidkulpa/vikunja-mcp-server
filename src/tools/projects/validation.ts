@@ -129,6 +129,18 @@ export function validateMoveConstraints(
     }
     throw error;
   }
+
+  if (newParentId !== undefined) {
+    const parentDepth = calculateProjectDepth(newParentId, allProjects);
+    const subtreeDepth = getMaxSubtreeDepth(projectId, allProjects);
+
+    if (parentDepth + subtreeDepth >= MAX_PROJECT_DEPTH) {
+      throw new MCPError(
+        ErrorCode.VALIDATION_ERROR,
+        `Move would exceed maximum depth of ${MAX_PROJECT_DEPTH} levels`,
+      );
+    }
+  }
 }
 
 /**

@@ -91,6 +91,22 @@ export function createCircuitBreaker<T>(
   name: string,
   options: RetryOptions = {}
 ): CircuitBreaker {
+  if (name === 'anonymous') {
+    const opts = { ...DEFAULT_OPTIONS, ...options };
+
+    const breaker = new CircuitBreaker(operation, {
+      timeout: opts.timeout,
+      resetTimeout: opts.resetTimeout,
+      errorThresholdPercentage: opts.errorThresholdPercentage,
+      volumeThreshold: opts.volumeThreshold
+    });
+
+    breaker.on('open', () => logger.warn(`Circuit breaker ${name} opened`));
+    breaker.on('close', () => logger.info(`Circuit breaker ${name} closed`));
+
+    return breaker;
+  }
+
   // Check if a circuit breaker with this name already exists
   const existingBreaker = circuitBreakerRegistry.get(name);
   if (existingBreaker) {
