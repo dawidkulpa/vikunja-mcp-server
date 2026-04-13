@@ -1357,6 +1357,10 @@ For detailed rate limiting configuration, see [`docs/RATE_LIMITING.md`](docs/RAT
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines and workflow.
 
+## Acknowledgments
+
+This project is a modified fork of [@democratize-technology/vikunja-mcp](https://github.com/democratize-technology/vikunja-mcp), originally created by Jeremy Green. Licensed under MIT.
+
 ## License
 
 MIT

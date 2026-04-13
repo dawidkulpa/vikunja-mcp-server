@@ -108,7 +108,7 @@ export const commentResponseFormatter = {
       ...(response.metadata?.affectedFields ? { affectedFields: response.metadata.affectedFields } : {}),
       // Convert previousState to proper Record<string, unknown> if it exists
       ...(response.metadata?.previousState && typeof response.metadata.previousState === 'object' && response.metadata.previousState !== null
-        ? { previousState: response.metadata.previousState as Record<string, unknown> }
+        ? { previousState: response.metadata.previousState }
         : {})
     };
 

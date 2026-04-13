@@ -1,6 +1,6 @@
 import type { VikunjaDirectClient } from '../../../client/direct-client';
 import type { Activity } from '../../../types/vikunja';
-import { MCPError, ErrorCode } from '../../../types/errors';
+import { MCPError } from '../../../types/errors';
 
 export class ActivityOperationsService {
   constructor(private readonly directClient: VikunjaDirectClient) {}

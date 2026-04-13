@@ -18,6 +18,9 @@ export default [
         ...globals.node,
         ...globals.es2022,
         NodeJS: 'readonly',
+        RequestInit: 'readonly',
+        Response: 'readonly',
+        Headers: 'readonly',
       },
     },
     plugins: {
