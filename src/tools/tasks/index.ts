@@ -106,12 +106,18 @@ async function listTasks(
  * Handle file attachments (not supported)
  */
 function handleAttach(): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
-  // Attachment handling would require file upload capabilities
-  // which are not available in the current MCP context
-  throw new MCPError(
-    ErrorCode.NOT_IMPLEMENTED,
-    'File attachments are not supported in the current MCP context',
-  );
+  return Promise.resolve({
+    content: [
+      {
+        type: 'text' as const,
+        text: JSON.stringify({
+          success: false,
+          operation: 'attach',
+          message: 'File attachment operations have moved to the dedicated vikunja_task_attachments tool. Use vikunja_task_attachments with operations: upload, list, download, delete.',
+        }),
+      },
+    ],
+  });
 }
 
 export function registerTasksTool(

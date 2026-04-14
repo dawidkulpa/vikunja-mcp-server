@@ -27,6 +27,7 @@ import { registerTaskMoveTool } from './task-move';
 import { registerTaskRemindersTool } from './task-reminders';
 import { registerTaskLabelsTool } from './task-labels';
 import { registerTaskRelationsTool } from './task-relations';
+import { registerTaskAttachmentsTool } from './task-attachments';
 import { registerProjectsTool } from './projects/index';
 import { registerLabelsTool } from './labels';
 import { registerTeamsTool } from './teams';
@@ -48,6 +49,7 @@ export { registerTaskMoveTool } from './task-move';
 export { registerTaskRemindersTool } from './task-reminders';
 export { registerTaskLabelsTool } from './task-labels';
 export { registerTaskRelationsTool } from './task-relations';
+export { registerTaskAttachmentsTool } from './task-attachments';
 
 export function registerTools(
   server: McpServer, 
@@ -72,6 +74,7 @@ export function registerTools(
   registerTaskRemindersTool(server, authManager, clientFactory);
   registerTaskLabelsTool(server, authManager, clientFactory);
   registerTaskRelationsTool(server, authManager, clientFactory);
+  registerTaskAttachmentsTool(server, authManager, clientFactory);
 
   // Only register tools that require clientFactory if it's available
   if (clientFactory) {

@@ -2699,12 +2699,19 @@ describe('Tasks Tool', () => {
   });
 
   describe('attach subcommand', () => {
-    it('should return not implemented error', async () => {
-      await expect(
-        callTool('attach', {
-          id: 1,
-        }),
-      ).rejects.toThrow('File attachments are not supported in the current MCP context');
+    it('should return redirect message for attachment operations', async () => {
+      const result = await callTool('attach', {
+        id: 1,
+      });
+      
+      expect(result.content).toBeDefined();
+      expect(result.content).toHaveLength(1);
+      expect(result.content[0].type).toBe('text');
+      
+      const message = JSON.parse(result.content[0].text);
+      expect(message.success).toBe(false);
+      expect(message.operation).toBe('attach');
+      expect(message.message).toContain('vikunja_task_attachments');
     });
   });
 
