@@ -21,6 +21,80 @@ export class VikunjaDirectClient {
     return this.request<T>('DELETE', path);
   }
 
+  async uploadFormData<T>(path: string, formData: FormData): Promise<T> {
+    const session = this.authManager.getSession();
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${session.apiToken}`,
+    };
+
+    try {
+      const response = await fetch(`${session.apiUrl}${path}`, {
+        method: 'PUT',
+        headers,
+        body: formData,
+      });
+
+      const responseText = await response.text();
+
+      if (!response.ok) {
+        throw new MCPError(
+          ErrorCode.API_ERROR,
+          `Request failed with status ${response.status}: ${responseText || response.statusText}`,
+          {
+            statusCode: response.status,
+            endpoint: path,
+          }
+        );
+      }
+
+      if (!responseText) {
+        return undefined as T;
+      }
+
+      return JSON.parse(responseText) as T;
+    } catch (error) {
+      if (error instanceof MCPError) {
+        throw error;
+      }
+
+      throw handleFetchError(error, `PUT ${path}`);
+    }
+  }
+
+  async getBuffer(path: string): Promise<ArrayBuffer> {
+    const session = this.authManager.getSession();
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${session.apiToken}`,
+    };
+
+    try {
+      const response = await fetch(`${session.apiUrl}${path}`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) {
+        const responseText = await response.text();
+        throw new MCPError(
+          ErrorCode.API_ERROR,
+          `Request failed with status ${response.status}: ${responseText || response.statusText}`,
+          {
+            statusCode: response.status,
+            endpoint: path,
+          }
+        );
+      }
+
+      return response.arrayBuffer();
+    } catch (error) {
+      if (error instanceof MCPError) {
+        throw error;
+      }
+
+      throw handleFetchError(error, `GET ${path}`);
+    }
+  }
+
   private async request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, body?: unknown): Promise<T> {
     const session = this.authManager.getSession();
     const headers: Record<string, string> = {
