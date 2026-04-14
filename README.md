@@ -991,6 +991,18 @@ vikunja_task_comments({ operation: 'update', id: 42, commentId: 5, comment: "Upd
 
 // Delete a comment
 vikunja_task_comments({ operation: 'delete', id: 42, commentId: 5 })
+
+// Upload a file attachment to a task
+vikunja_task_attachments({ operation: 'upload', taskId: 42, filePath: '/tmp/report.pdf' })
+
+// List all attachments on a task
+vikunja_task_attachments({ operation: 'list', taskId: 42 })
+
+// Download an attachment to a local file
+vikunja_task_attachments({ operation: 'download', taskId: 42, attachmentId: 7, outputPath: '/tmp/downloaded-report.pdf' })
+
+// Delete an attachment
+vikunja_task_attachments({ operation: 'delete', taskId: 42, attachmentId: 7 })
 ```
 
 ## Response Format
@@ -1079,7 +1091,7 @@ This standardized format ensures:
     - Handles partial failures gracefully
     - ⚠️ Performance: Makes individual delete calls for each task
     - Recommended: Process in batches of 20 or fewer tasks
-  - `attach` - Not implemented (file handling not available in MCP)
+  - `attach` - Redirects to `vikunja_task_attachments` tool for full CRUD support
 
 ### Focused Task Tools ✅
 - `vikunja_buckets` - List project views and kanban buckets
@@ -1110,6 +1122,16 @@ This standardized format ensures:
     - Required: `id`, `commentId`, `comment`
   - `delete` - Delete a comment
     - Required: `id`, `commentId`
+
+- `vikunja_task_attachments` - Manage file attachments on tasks
+  - `upload` - Upload a file to a task
+    - Required: `taskId`, `filePath`
+  - `list` - List all attachments on a task
+    - Required: `taskId`
+  - `download` - Download an attachment to a local file
+    - Required: `taskId`, `attachmentId`, `outputPath`
+  - `delete` - Delete an attachment
+    - Required: `taskId`, `attachmentId`
 
 ### Batch Import ✅
 - `vikunja_batch_import` - Import multiple tasks from CSV or JSON (fully implemented)
@@ -1301,7 +1323,7 @@ This standardized format ensures:
 
 ## Known Limitations
 
-1. **File Attachments**: The `attach` subcommand is not implemented due to MCP protocol limitations
+1. **File Attachments**: Supported via local file paths using the dedicated `vikunja_task_attachments` tool. The agent must have filesystem access to upload/download files. The `attach` subcommand in `vikunja_tasks` redirects to this tool.
 2. **Team Operations**: Limited functionality due to incomplete node-vikunja API support:
    - Cannot get team by ID
    - Cannot update team information

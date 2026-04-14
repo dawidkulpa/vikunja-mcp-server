@@ -207,7 +207,7 @@ try {
    - Some user endpoints have authentication issues
 
 2. **MCP Protocol Constraints**:
-   - No file attachment support
+   - File attachments supported via `vikunja_task_attachments` tool (upload/list/download/delete using local file paths)
    - Synchronous tool execution model
    - Limited context sharing between tool calls
 
