@@ -34,7 +34,7 @@ export function registerTaskCommentsTool(
       operation: z.enum(['list', 'add', 'update', 'delete']),
       // Task and comment identification
       id: z.number(),
-      comment: z.string().optional(),
+      comment: z.string().optional().describe('Comment text. Use HTML for rich text (e.g. <p>, <strong>, <em>, <h1>-<h6>, <ul>/<li>, <code>, <pre>, <blockquote>). Raw markdown will NOT render — Vikunja uses an HTML-based editor.'),
       commentId: z.number().optional(),
     },
     async (args) => {

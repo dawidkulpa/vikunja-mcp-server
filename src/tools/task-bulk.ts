@@ -36,7 +36,7 @@ export function registerTaskBulkTool(
         .array(
           z.object({
             title: z.string(),
-            description: z.string().optional(),
+            description: z.string().optional().describe('Task description. Use HTML for rich text (e.g. <p>, <strong>, <em>, <h1>-<h6>, <ul>/<li>, <code>, <pre>, <blockquote>). Raw markdown will NOT render — Vikunja uses an HTML-based editor.'),
             dueDate: z.string().optional(),
             priority: z.number().min(0).max(5).optional(),
             labels: z.array(z.number()).optional(),

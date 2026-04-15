@@ -155,7 +155,7 @@ export function registerTasksTool(
       ]),
       // Task creation/update fields
       title: z.string().optional(),
-      description: z.string().optional(),
+      description: z.string().optional().describe('Task description. Use HTML for rich text (e.g. <p>, <strong>, <em>, <h1>-<h6>, <ul>/<li>, <code>, <pre>, <blockquote>). Raw markdown will NOT render — Vikunja uses an HTML-based editor.'),
       projectId: z.number().optional(),
       dueDate: z.string().optional(),
       priority: z.number().min(0).max(5).optional(),
@@ -172,11 +172,11 @@ export function registerTasksTool(
       perPage: z.number().optional(),
       sort: z.string().optional(),
       search: z.string().optional(),
-      // List specific filters
+       // List specific filters
       allProjects: z.boolean().optional(),
       done: z.boolean().optional(),
       // Comment fields
-      comment: z.string().optional(),
+      comment: z.string().optional().describe('Comment text. Use HTML for rich text (e.g. <p>, <strong>, <em>, <h1>-<h6>, <ul>/<li>, <code>, <pre>, <blockquote>). Raw markdown will NOT render — Vikunja uses an HTML-based editor.'),
       commentId: z.number().optional(),
       // Bulk operation fields
       taskIds: z.array(z.number()).optional(),
@@ -186,7 +186,7 @@ export function registerTasksTool(
         .array(
           z.object({
             title: z.string(),
-            description: z.string().optional(),
+            description: z.string().optional().describe('Task description. Use HTML for rich text (e.g. <p>, <strong>, <em>, <h1>-<h6>, <ul>/<li>, <code>, <pre>, <blockquote>). Raw markdown will NOT render — Vikunja uses an HTML-based editor.'),
             dueDate: z.string().optional(),
             priority: z.number().min(0).max(5).optional(),
             labels: z.array(z.number()).optional(),
