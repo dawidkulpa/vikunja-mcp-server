@@ -124,4 +124,40 @@ describe('AttachmentOperationsService', () => {
       expect(mockClient.delete).toHaveBeenCalledWith('/tasks/1/attachments/7');
     });
   });
+
+  describe('upload', () => {
+    it('handles single-object API response (real Vikunja behavior)', async () => {
+      const attachment = createAttachment();
+      mockedFileIo.readFileBuffer.mockResolvedValue(Buffer.from('file-content'));
+      mockedFileIo.getFileStats.mockResolvedValue({ name: 'file.pdf', size: 1024 });
+      // Real Vikunja API returns single object, NOT array
+      mockClient.uploadFormData.mockResolvedValue(attachment);
+
+      const result = await service.upload(1, '/tmp/file.pdf');
+      expect(result).toBe(attachment);
+      expect(result.id).toBe(7);
+    });
+
+    it('throws MCPError when API returns empty response', async () => {
+      mockedFileIo.readFileBuffer.mockResolvedValue(Buffer.from('file-content'));
+      mockedFileIo.getFileStats.mockResolvedValue({ name: 'file.pdf', size: 1024 });
+      mockClient.uploadFormData.mockResolvedValue(undefined);
+
+      await expect(service.upload(1, '/tmp/file.pdf')).rejects.toMatchObject({
+        name: 'MCPError',
+        code: ErrorCode.INTERNAL_ERROR,
+      });
+    });
+
+    it('throws MCPError when API returns empty array', async () => {
+      mockedFileIo.readFileBuffer.mockResolvedValue(Buffer.from('file-content'));
+      mockedFileIo.getFileStats.mockResolvedValue({ name: 'file.pdf', size: 1024 });
+      mockClient.uploadFormData.mockResolvedValue([]);
+
+      await expect(service.upload(1, '/tmp/file.pdf')).rejects.toMatchObject({
+        name: 'MCPError',
+        code: ErrorCode.INTERNAL_ERROR,
+      });
+    });
+  });
 });

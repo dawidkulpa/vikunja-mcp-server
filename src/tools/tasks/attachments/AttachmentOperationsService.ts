@@ -17,9 +17,14 @@ export class AttachmentOperationsService {
 
       formData.append('files', new Blob([buffer]), name);
 
-      const attachments = await this.directClient.uploadFormData<Attachment[]>(`/tasks/${taskId}/attachments`, formData);
+      const result = await this.directClient.uploadFormData<Attachment | Attachment[]>(`/tasks/${taskId}/attachments`, formData);
 
-      return attachments[0] as Attachment;
+      const attachment = Array.isArray(result) ? result[0] : result;
+      if (!attachment) {
+        throw new MCPError(ErrorCode.INTERNAL_ERROR, 'Upload succeeded but server returned no attachment data');
+      }
+
+      return attachment;
     } catch (error) {
       this.handleFileError(error, filePath);
       throw error;
